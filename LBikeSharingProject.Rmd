@@ -1,0 +1,730 @@
+---
+title: "LondonBikeSharing"
+author: "vignesh"
+date: "3/5/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+```
+
+## R Markdown
+
+```{r reading the libraries}
+#install.packages("corrplot")
+#install.packages("ggcorrplot")
+#install.packages("psych")
+#if (!require(devtools)) install.packages("devtools")
+#library(devtools)
+#install_github("boxuancui/DataExplorer")
+library(tidyverse) # metapackage with lots of helpful functions
+library(RColorBrewer)
+library(scales)
+library(lubridate)
+library(car)
+#options(warn=-1)
+library(ggcorrplot)
+library(lattice)
+library(psych)
+library(DataExplorer)
+library(readxl)
+library(data.table)
+library(plotly)
+#install.packages('reticulate')
+
+```
+
+
+
+
+```{r  reading the data into the dataframe}
+
+lBikeSharing = read_csv('Actuallondon_merged.csv')
+
+
+#Context:  The London based bike sharing company would like to figure out which
+#seasons would actually bring them the revenue based on the customers demand. 
+#This company is really interested in knowing the seasonality effect on the 
+#inventory holding cost of the bikes. Based on these relationships, this company
+#would like to adopt a new technology to predict the future demand and also a 
+#basic tool which provides the info about seasonality effect on their bike 
+#sharing business, demand prediction and the estimated revenue. 
+
+
+#Need: Revenue is the most important key performance indictor of any company. 
+#A profitable business can be achieved either through cost cutting or through 
+#high marginal sales. Here the client is more interested in cost cutting. 
+#He is not just looking at one single objective of prediction but he is more 
+#interested into finding out the inference of the problem such as understanding 
+#the effect seasonality patterns on demand for bike sharing. Based on the 
+#established inferences from the potential predictors, client is ready to take 
+#any appropriate measures to make a profitable business in couple of years.
+
+
+
+#Vision: The potential investigation into this data would help the company in 
+#visualizing the complete picture of their bike sharing business throughout the
+#season. Based on the historical inventory of bikes, seasonality impact on bike 
+#sharing business and past decisions taken, we will try to learn the patterns 
+#in the past and try recommend in the future in what needs to be invested 
+#(drop in inventory, hold the inventory or get a new inventory with respect to 
+#the season.
+
+
+
+
+#Outcome:  If the company director is happy with this basic feasible tool which 
+#provides the complete historical picture of their 2 years business along with 
+#preliminary results of prediction model of future. The company is ready to 
+#adopt this tool for a minimum of 2 years to see the improvement in their key 
+#performance indicators includes revenue, expenses, inventory etc. 
+#The Business manager will be able to runs the prediction model once in every 
+#month and reports to the director about the appropriate results
+#month on month.
+
+
+
+```
+
+#CONTEXT:  The London based bike sharing company would like to figure out which
+#seasons would actually bring them the revenue based on the customers demand. 
+#This company is really interested in knowing the seasonality effect on the 
+#inventory holding cost of the bikes. Based on these relationships, this company
+#would like to adopt a new technology to predict the future demand and also a 
+#basic tool which provides the info about seasonality effect on their bike 
+#sharing business, demand prediction and the estimated revenue. 
+
+
+#NEED: Revenue is the most important key performance indictor of any company. 
+#A profitable business can be achieved either through cost cutting or through 
+#high marginal sales. Here the client is more interested in cost cutting. 
+#He is not just looking at one single objective of prediction but he is more 
+#interested into finding out the inference of the problem such as understanding 
+#the effect seasonality patterns on demand for bike sharing. Based on the 
+#established inferences from the potential predictors, client is ready to take 
+#any appropriate measures to make a profitable business in couple of years.
+
+
+
+#VISION: The potential investigation into this data would help the company in 
+#visualizing the complete picture of their bike sharing business throughout the
+#season. Based on the historical inventory of bikes, seasonality impact on bike 
+#sharing business and past decisions taken, we will try to learn the patterns 
+#in the past and try recommend in the future in what needs to be invested 
+#(drop in inventory, hold the inventory or get a new inventory with respect to 
+#the season.
+
+
+
+
+#OUTCOME:  If the company director is happy with this basic feasible tool which 
+#provides the complete historical picture of their 2 years business along with 
+#preliminary results of prediction model of future. The company is ready to 
+#adopt this tool for a minimum of 2 years to see the improvement in their key 
+#performance indicators includes revenue, expenses, inventory etc. 
+#The Business manager will be able to runs the prediction model once in every 
+#month and reports to the director about the appropriate results
+#month on month.
+
+
+
+```{r }
+
+#Metadata:
+#"timestamp" - timestamp field for grouping the data
+#"cnt" - the count of a new bike shares
+#"t1" - real temperature in C
+#"t2" - temperature in C "feels like"
+#"hum" - humidity in percentage
+#"windspeed" - wind speed in km/h
+#"weathercode" - category of the weather
+#"isholiday" - boolean field - 1 holiday / 0 non holiday
+#"isweekend" - boolean field - 1 if the day is weekend
+#"season" - category field meteorological seasons: 0-spring ; 1-summer; 2-fall; 3-winter.
+#"weathe_code" category description:
+     #1  = Clear ; mostly clear but have some values with haze/fog/patches of fog/ fog in vicinity 
+     #2  = scattered clouds / few clouds 
+     #3  = Broken clouds 
+     #4  = Cloudy 
+     #7  = Rain/ light Rain shower/ #Light rain
+     #10 = rain with thunderstorm 
+     #26 = snowfall 
+     #94 = Freezing Fog
+
+```
+
+
+
+
+```{r renaming the names of the fields for better readability}
+
+# ---  change some names for clarity str(b)  ----#
+lBikeSharing = lBikeSharing %>% rename("Rentals" = "cnt",
+                  "Temperature" = "t1",
+                  "Feels_Like_Temperature" = "t2",
+                  "Humidity" = "hum",
+                  "Season" = 'season',
+                  'Weather' = 'weather_code',
+                  'Windspeed' = 'wind_speed',
+                  'Workday' = 'is_weekend',
+                  'Holiday' = 'is_holiday')
+
+```
+
+
+
+```{r Data cleaning or Preprocessing the data for more readibility and visualization}
+
+
+duplicatelbBikeSharing <- copy(lBikeSharing)
+
+# re-coding the factors with the descriptive values for easy readability and 
+# understanding
+
+duplicatelbBikeSharing$Weather= factor(duplicatelbBikeSharing$Weather, 
+                          levels = c(1, 2, 3, 4, 7, 10, 26, 94),
+                          labels = c('clear', 'scattered_clouds', 
+                           'broken_clouds', 'cloudy', 'light_rain',
+                           'heavy_rain', 'snowfall', 
+                           'freezing_fog'))
+
+
+duplicatelbBikeSharing$Workday= factor(duplicatelbBikeSharing$Workday, 
+                          levels = c(0, 1),
+                          labels = c('workday', 'weekend'))
+
+duplicatelbBikeSharing$Holiday= factor(duplicatelbBikeSharing$Holiday, 
+                          levels = c(0, 1),
+                          labels = c('non_holiday', 'holiday'))
+
+
+
+
+duplicatelbBikeSharing$Season= factor(duplicatelbBikeSharing$Season, 
+                          levels = c(0, 1, 2, 3),
+                          labels = c('spring', 'summer', 'fall', 'winter'))
+
+
+
+
+
+dayField = data.frame(date=c(duplicatelbBikeSharing$timestamp)) 
+dayField$day <- weekdays(as.Date(dayField$date,"%m/%d/%Y" ))
+
+
+d <- data.frame(date = c(duplicatelbBikeSharing$timestamp))
+my_dates = separate(d, "date", c("Month", "Day", "Year"), sep = "/")
+
+
+my_hours = data.frame(do.call("rbind", strsplit(as.character(my_dates$Year), 
+                                                " ", fixed = TRUE)))
+
+
+duplicatelbBikeSharing = cbind(duplicatelbBikeSharing, my_hours, 
+                               my_dates$Month, my_dates$Day, dayField$day)
+
+
+duplicatelbBikeSharing = duplicatelbBikeSharing %>% rename("Year" = "X1",
+                                                           "Time" = "X2",
+                                                           "Month" = "my_dates$Month",
+                                                           "DayNumber" = "my_dates$Day",
+                                                           "Day" = "dayField$day")
+
+
+duplicatelbBikeSharing$Month= factor(duplicatelbBikeSharing$Month, 
+                          levels = c(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12),
+                          labels = c('Jan', 'Feb', 'Mar', 'Apr', 'May',
+                                     'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov',
+                                     'Dec'))
+
+
+
+```
+
+
+```{r Names of the predictors and the response variable}
+
+#From the given data, we can identify that the following are the predictors:
+
+
+#DEFINATIONS AND DESCRIPTION:
+#PREDICTORS:
+  #1. Timestamp   : This is in the format of mm/dd/yyyy hh which tells us the 
+  #                information about the bike rents that were happened
+
+  #2. Weather     :  The weather field in the data describes about the how the day
+  #                 is basically is it a sunny day or cloudy or rainy day etc.,
+
+
+  #3. Temperature : The temperature field in the data is measured in the degrees
+  #                 of  celsius scale. It is the average temperature measured 
+  #                 during the day
+  #                
+  #4. Feels like temperature: The Feels like temperature field in the data is 
+  #                  measured in the degrees of  celsius scale. It is the average
+  #                  feels like temperature during the day.
+  #                 
+  #                 
+  #5. Wind speed  : This is the speed with which air is moving from high to low
+  #                  pressure, usually due to changes in temperature
+  #                 
+  #6. Humidity    :  This is the field in data which indicates the concentration
+  #                  of water vapor present in the air.
+
+  #7. Workday     : This is just binary variable tells us the information
+  #                 about the day whether it is a workday or not
+
+
+  #8. Season      : The season variable in the data tells us the information about
+  #                  whether the season being spring, summer, fall or winter.
+
+#RESPONSE VARIABLE
+  #1. Rentals    : The response variable is the total number of rents that were
+  #                 occurred during any given hour of a given day
+
+
+
+```
+
+
+#From the given data, we can identify that the following are the predictors:
+
+
+#DEFINATIONS AND DESCRIPTION:
+#PREDICTORS:
+  #1. Timestamp   : This is in the format of mm/dd/yyyy hh which tells us the 
+  #                information about the bike rents that were happened
+
+  #2. Weather     :  The weather field in the data describes about the how the day
+  #                 is basically is it a sunny day or cloudy or rainy day etc.,
+
+
+  #3. Temperature : The temperature field in the data is measured in the degrees
+  #                 of  celsius scale. It is the average temperature measured 
+  #                 during the day
+  #                
+  #4. Feels like temperature: The Feels like temperature field in the data is 
+  #                  measured in the degrees of  celsius scale. It is the average
+  #                  feels like temperature during the day.
+  #                 
+  #                 
+  #5. Wind speed  : This is the speed with which air is moving from high to low
+  #                  pressure, usually due to changes in temperature
+  #                 
+  #6. Humidity    :  This is the field in data which indicates the concentration
+  #                  of water vapor present in the air.
+
+  #7. Workday     : This is just binary variable tells us the information
+  #                 about the day whether it is a workday or not
+
+
+  #8. Season      : The season variable in the data tells us the information about
+  #                  whether the season being spring, summer, fall or winter.
+
+#RESPONSE VARIABLE
+  #1. Rentals    : The response variable is the total number of rents that were
+  #                 occurred during any given hour of a given day
+
+
+
+```{r Total number of rentals based on the Years}
+#-------------------------------------------#
+######       Visualize the Data        ######
+#-------------------------------------------#
+s = c("green", 'yellow', 'orange', 'grey50')
+options(repr.plot.width=10, repr.plot.height=8)
+duplicatelbBikeSharing %>% group_by(Year) %>%
+  summarise(n = n(), Totalrent = sum(Rentals)) %>%
+  ggplot(aes(Year, Totalrent, fill = Year)) + 
+  geom_bar(stat = "identity", show.legend = F, color = 'gray50') +
+  theme_bw(base_size = 16) + scale_fill_manual(values = s) +
+  labs(title = "Rentals by Years", x = "", y = "Total Rentals") +
+  scale_y_continuous(labels = scales::label_comma())
+
+```
+
+Observation-1: 
+a. The % increment in the bike sharing rentals is around
+   18.76% from year 2015 to 2016.
+
+Note: We do have a few rentals in the year 2017, the data provided by the company 
+for the year 2017 is not complete.
+
+```{r }
+
+#Observation-1:
+  
+#  From the bar plots we can see that the total number of rentals in the summers
+#of both the years 2015 and 2016 are higher compared to the rest of the seasons.
+
+#If we take rankings then we can see that 
+#Rank - 1 -  Summer
+#Rank - 2 -  Fall
+#Rank - 3 -  Spring
+#Rank - 4 -  Winter
+
+```
+
+
+
+
+```{r Total number of rentals based on the Seasons}
+
+s = c("green", 'yellow', 'orange', 'grey50')
+options(repr.plot.width=10, repr.plot.height=8)
+duplicatelbBikeSharing %>% group_by(Season) %>%
+  summarise(n = n(), Totalrent = sum(Rentals)) %>%
+  ggplot(aes(Season, Totalrent, fill = Season)) + 
+  geom_bar(stat = "identity", show.legend = F, color = 'gray50') +
+  theme_bw(base_size = 16) + scale_fill_manual(values = s) +
+  labs(title = "Rentals by Season", x = "", y = "Total Rentals") +
+  scale_y_continuous(labels = scales::label_comma())
+
+
+
+
+```
+
+Observation-2:
+  
+From the bar plots we can see that the total number of rentals in the summers
+of both the years 2015 and 2016 are higher compared to the rest of the seasons.
+
+If we take rankings then we can see that 
+ Rank - 1 -  Summer
+ Rank - 2 -  Fall
+ Rank - 3 -  Spring
+ Rank - 4 -  Winter
+
+
+
+
+```{r Rentals versus Seasons and weather}
+# The following code would try to get the visualization for how the total number of 
+#rentals would fluctuate based on the weather and season.
+options(repr.plot.width=1000, repr.plot.height=500)
+duplicatelbBikeSharing %>% group_by( Weather,Season) %>%
+  summarise(n = n(), rent = sum(Rentals)) %>%
+  ggplot(aes(Season, rent, fill = Season)) + 
+  geom_bar(stat = "identity", color = 'grey50', show.legend = F) +
+  scale_x_discrete(guide = guide_axis(n.dodge=3))+
+  scale_fill_manual(values = s) +
+  facet_grid(~Weather) + theme_minimal(base_size = 8) +
+  labs(title = "Rentals by Season & Workday", x = " ", y = "Total Rentals") +
+  scale_y_continuous(labels = scales::label_comma())+ theme(axis.text.x = element_text(angle = 90, vjust = 1, hjust = 1))
+
+```
+
+The above visualization bar plot shows how the total number of 
+rentals would fluctuate based on the weather and season.
+
+Observation-3: 
+a. As expected the number of rentals or bike sharing that were happened during
+summer when the sky was clear is the highest number overall.This is followed by
+scattered clouds in the summer.
+
+b. Surprisingly, the number of bike sharings during the light rain of spring, summer 
+and fall were higher compared to a cloudy day.Whereas, the during winter the 
+rentals during cloudy days were higher than the rainy days.
+
+
+```{r Rentals versus Temperature plot}
+# The following code would try to get the visualization for how the total number
+#of rentals spread across the temperature fluctuations.
+
+plot_ly(data = duplicatelbBikeSharing,
+        x = ~Temperature, y =~Rentals, color = ~Temperature,
+        size = ~Temperature,
+        type = "scatter",
+        text = ~paste("Temperature: ", Temperature, '<br>Rentals:', Rentals))
+
+
+```
+Observation-4:
+a. As expected the number of bike sharing were low in number when the temperature 
+is less than the normal day temperature(as we seen in the bar plots). 
+
+2. Clearly, the number of bike shares happened when the temperature is in-between
+10 to 25 degrees(average temperature)
+
+
+```{r Rental versus Feels like temperature}
+# The following code would try to get the visualization for how the total number
+#of rentals spread across the Humidity fluctuations.
+
+plot_ly(data = duplicatelbBikeSharing,
+        x = ~Feels_Like_Temperature, y =~Rentals, color = ~Feels_Like_Temperature,
+        size = ~Feels_Like_Temperature,
+        type = "scatter",
+        text = ~paste("Feels: ", Feels_Like_Temperature, '<br>Rentals:', Rentals))
+
+
+```
+Observation-4:
+a. Feels like temperature predictor has same impact as actual temperature
+measured. 
+
+Note: When the feels like temperature is below 0 degree the number of bike shares
+has come down. Also when the temperature is 10 to 12 degree the number of bikes
+sharing has come down(Need to investigate if there is any missing data)
+
+
+```{r Rental versus Humidity plot }
+# The following code would try to get the visualization for how the total number
+#of rentals spread across the Humidity fluctuations.
+hw = round(cor(duplicatelbBikeSharing$Rentals, duplicatelbBikeSharing$Windspeed),2)
+plot_ly(data = duplicatelbBikeSharing,
+        x = ~Humidity, y =~Rentals, color = ~Humidity,
+        size = ~Humidity,
+        type = "scatter",
+        text = ~paste("Humidity: ", Humidity, '<br>Rentals:', Rentals))
+
+
+```
+Observation-5:
+
+a. Humidity has a significant effect on the bike sharing, clearly from the plot
+we can observe that when the humidity was less than 40, the number of sharing were
+not dense enough compared to when the humidity was greater than 50.
+
+
+```{r Rentals versus Windspeed}
+
+# ---  Windspeed and rentals  -----
+cw = round(cor(duplicatelbBikeSharing$Rentals, duplicatelbBikeSharing$Windspeed),2)
+ggplot(duplicatelbBikeSharing,aes(Windspeed,Rentals)) + 
+  geom_point(aes(color=Windspeed), cex = 4) + theme_bw(base_size = 16) +
+  scale_color_continuous(low="lightgreen",high="deepskyblue4") +
+  labs(title = sprintf('Rentals to Windspeed (Correlation = %s)', cw),
+       y = "Count of Rentals")
+
+```
+
+Observation-6:
+a. Clearly, from the plot we can observe that Windspeed has its own impact on the 
+   number of share that were happened. 
+b. As expected the number of bike sharing happened when the wind speed is around
+   0 to 35 km/hr is higher and this number has drastically came down as the wind
+   speed increases more than 35 kmph.
+
+```{r }
+
+ggplot(data=duplicatelbBikeSharing,                          # Define the data to plot
+       aes(x=Workday, 
+           y=Rentals, 
+           fill=Season)) +                        # Different fill colours
+  geom_boxplot() +                             # Draw a box and whiskers plot
+  labs(y='Rentals') +                 # Add y-axis title
+  theme_bw()                                   # Set the background to white
+
+```
+
+
+Observation-7:
+a. Clearly from the above box plots segregated for weekdays and weekends, 
+we can see that median is higher during workdays when compared to weekends.
+
+b. As seen from the above bar plots, the median of bike shares happening during
+summer is higher followed by spring, fall and winter.
+
+
+
+```{r }
+
+ggplot(data=duplicatelbBikeSharing,                          # Define the data to plot
+       aes(x=reorder(Day, Rentals, FUN = mean), 
+           y=Rentals, 
+           fill=Season)) +                        # Different fill colours
+  geom_boxplot() +                             # Draw a box and whiskers plot
+  labs(y='Rentals') +                 # Add y-axis title
+  theme_bw()                                   # Set the background to white
+
+
+
+ggplot(data=duplicatelbBikeSharing,                          # Define the data to plot
+       aes(x=Day, 
+           y=Rentals, 
+           fill=Season)) +                        # Different fill colours
+  geom_boxplot() +                             # Draw a box and whiskers plot
+  labs(y='Rentals') +                 # Add y-axis title
+  theme_bw()      
+```
+
+Observation-8:
+a. The median of number of bike shares happening during Sundays are low in number
+compared to weekdays.
+
+b. The median of Bike sharings during Tuesdays, Wednesday,Thursdays and Fridays
+are out-numbered  than any other days in any given  week. Especially on Fridays.
+
+```{r }
+
+ggplot(data=duplicatelbBikeSharing,                # Define the data to plot
+       aes(x=Workday, 
+           y=Rentals, 
+           fill=Time)) +                        # Different fill colours
+  geom_boxplot() +                             # Draw a box and whiskers plot
+  labs(y='Rentals') +                 # Add y-axis title
+  theme_bw()+                                   # Set the background to white
+  scale_y_continuous(labels = scales::label_comma())+ 
+  theme(axis.text.x = element_text(angle = 90, vjust = 1, hjust = 1))
+```
+Observation-9:
+
+a. The number of bike sharing happening from 3PM to 7 PM are very high 
+compared to any other hour in any given day.
+
+b. Surprisingly, the number of bike sharings happening in the morning times, are
+not much.
+
+
+```{r }
+
+ggplot(data=duplicatelbBikeSharing,                # Define the data to plot
+       aes(x=Season, 
+           y=Rentals, 
+           fill=Weather)) +                        # Different fill colours
+  geom_boxplot() +                             # Draw a box and whiskers plot
+  labs(y='Rentals') +                 # Add y-axis title
+  theme_bw()+                                   # Set the background to white
+  scale_y_continuous(labels = scales::label_comma())+ 
+  theme(axis.text.x = element_text(angle = 90, vjust = 1, hjust = 1))
+```
+
+
+```{r summary of the data}
+
+
+
+
+sprintf("The summary statistics of the rentals are :")
+summary(lBikeSharing$Rentals)
+
+sprintf("The summary statistics of the Temperature are :")
+summary(lBikeSharing$Temperature) 
+
+sprintf("The summary statistics of the Feels Like Temperature are :")
+summary(lBikeSharing$Feels_Like_Temperature)
+
+sprintf("The summary statistics of the Humidity are :")
+summary(lBikeSharing$Humidity)
+
+
+sprintf("The summary statistics of the Windspeed are :")
+summary(lBikeSharing$Windspeed)
+        
+
+
+```
+
+Observation-10:
+
+a. Surprisingly, in all the seasons the mean of bike sharings that are happening
+during scattered cloudy days are higher than during the clear sky day.
+
+```{r }
+
+library(corrplot)
+corr = cor(lBikeSharing%>% select(where(is.numeric)),method='pearson',use='complete.obs' )
+#cor_matrix = cor(msleep[ ,c(6:9)], method='pearson',use='complete.obs')
+
+# Now produce the plot
+corrplot(corr, order = "hclust")
+
+```
+
+Observation-11:
+
+Based on the correlation plot we can extract the following relationships:
+
+1. Number of rentals have a strong positive correlation with Temperature.
+2. Number of rentals have a moderate positive correlation with Windspeed.
+3. Number of rentals have a strong negative correlation with Humidity.
+4. Number of rentals have a moderate negative correlation with season.
+5. Number of rentals have a slightly negative correlation with weather and workday.
+
+
+```{r }
+library("GGally")
+ggpairs(data = lBikeSharing,
+        #mapping = aes(color = MP24),
+        columns = c("Season", "Weather", "Temperature", "Humidity", "Rentals",
+                    "Workday", "Windspeed"),
+        upper = list(continuous = wrap("cor", size = 2.5))
+        )
+
+
+
+```
+
+
+
+
+
+```{r }
+
+pairs(duplicatelbBikeSharing[, c(2:9)])
+
+```       
+       
+       
+       
+Causality Discussions:
+
+1. The total number of bike sharing happening during the rainy day out-numbered
+   the total number of bike sharing happening in cloudy day.
+   
+   a. Does the cloudy day decreases visibility of a rider..?
+   b. Is the visibility have an impact on bike sharing.?
+   
+Need to investigate further on this.
+```{r }   
+library(dagitty)
+dag <- dagitty("dag {
+  Light_Rain -> Visibility
+  Cloudy -> Visibility
+  Visibility -> Rentals
+               }")
+plot( graphLayout( dag ) )
+
+```       
+       
+2. Can this london bike sharing company drop the inventory during the winter
+   season.?
+   Reason: As the total number of rentals significantly got dropped. Will this
+   benefit their process of cost cutting and thereby increasing their revenues.
+   
+                    (or)
+                    
+  Is it it a good idea for this company to invest on some different policies 
+  in attracting the customers.?
+  
+  
+  
+   
+   
+  
+  
+  
+       
+       
+       
+       
+  
+  
+  
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
