@@ -1,0 +1,1105 @@
+---
+title: "LondonBikeSharing"
+author: "VigneshwarPesaru"
+date: "3/12/2021"
+output:
+  html_document: default
+  pdf_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+	echo = FALSE,
+	message = FALSE,
+	warning = FALSE
+)
+```
+
+
+## R Reading Libraries
+
+```{r reading the libraries}
+	message = FALSE
+	warning = FALSE
+#install.packages('packHV')	
+#install.packages("corrplot")
+#install.packages("ggcorrplot")
+#install.packages("psych")
+#if (!require(devtools)) install.packages("devtools")
+#library(devtools)
+#install_github("boxuancui/DataExplorer")
+library(tidyverse) # metapackage with lots of helpful functions
+library(RColorBrewer)
+library(scales)
+library(lubridate)
+library(car)
+#options(warn=-1)
+library(ggcorrplot)
+library(lattice)
+library(psych)
+library(DataExplorer)
+library(readxl)
+library(data.table)
+library(plotly)
+library(e1071)
+library(caret)
+library(packHV)
+#install.packages('reticulate')
+
+```
+
+
+## R Source of Data:
+
+https://www.kaggle.com/hmavrodiev/london-bike-sharing-dataset
+
+The data is further acquired from 3 sources:
+
+Https://cycling.data.tfl.gov.uk/ 'Contains OS data © Crown copyright and database rights 2016' and Geomni UK Map data © and database rights [2019] 'Powered by TfL Open Data'
+freemeteo.com - weather data
+https://www.gov.uk/bank-holidays
+From 1/1/2015 to 31/12/2016
+The data from cycling dataset is grouped by "Start time", this represent the count of new bike shares grouped by hour. The long duration shares are not taken in the count.
+
+## R Reading Data
+
+```{r  reading the data into the dataframe}
+
+lBikeSharing = read_csv('Actuallondon_merged.csv')
+	message = FALSE
+	warning = FALSE
+
+#CONTEXT:  
+	
+#The London based tech-startup company has established an innovative 
+#transportation business, whereby system subscribers have access to bicycles 
+#through self-service kiosk locations around the community. This London Bike 
+#sharing (LBS) company is providing the bike rentals for short distance 
+#point-to-point trips providing subscribers access to bicycles at any self-serve
+#bike station to use and return to any bike station within the system’s service area. 
+#Bike share stations are generally spaced in a dense grid pattern to create 
+#convenient origins and destinations for riders. Most UK operators record the 
+#average ride at 15 to 20 minutes and between one to four miles long. 
+#The bicycle can be returned to any number of self-serve bike sharing stations,
+#including the original check out location. The rental transaction is fully
+#automated and there is no need for on-site staff. 
+
+#Recently, the Sr.Director of this company has passed an order to revive the 
+#revenue plans  of the company. The company Research and Development(R&D) head 
+#is now started working with his team in trying to understand the impact of
+#seasons, holidays, weather and peak times on their current existing business
+#model. Based on these relationships, LBS company would like to adopt a new 
+#technology which helps them in investing on different technologies and ideas 
+#of promoting the rental business to increase the demand. 
+
+
+
+#NEED: 
+
+#Revenue is the most important key performance indicator of any company. 
+#A profitable business can be achieved either through cost cutting or through 
+#high marginal sales. Here the client is more interested in how to increase their
+#rentals per hour ratio(ridership). 
+
+#LBS has come up with a plan for increment in ridership throughout the year by 
+#providing promotional codes to new riders, discounts during the holidays/weekends,
+#user friendly fares during the peak times etc., In-order to further invest on 
+#promotion codes to new riders, the Sr.Director is more interested in knowing the
+#impact of seasons, holidays, weather and peak times on their current existing 
+#business model. In this way the inference of various factors on the rentals 
+#would help management team to come up with a decision on what is the best season
+#to introduce promotion codes and discounts.
+
+#Here, LBS is not just looking at one single objective of prediction but it is 
+#more interested into finding out the inference of the problem such as 
+#understanding the effect seasonality patterns, weather, holiday and peak 
+#times on demand for bike sharing. Based on the established inferences from the
+#potential predictors, client is ready to take any appropriate measures to make 
+#a profitable business in an year. 
+
+
+#VISION: 
+
+#The aim of the LBS is to develop an affordable, user-friendly bike share plan 
+#that increases ridership with the profitable business. The LBS envisions a 
+#system that is accessible and equitable to UK residents, students, workers 
+#and visitors.
+
+#The Bike Share Business Plan expands and revises adopted revenue policies. 
+#This plan introduces the following new concepts: 
+#1.	Basic tool for demand prediction and estimated revenues,
+#2.	Understanding the impact of various factors (seasons, weather etc.,) 
+#	  on the performance indictors(ridership),  
+#3.	New bike share technologies, 
+#4.	Monthly or annual membership plans, promotional codes to new riders.
+
+
+
+#OUTCOME:  
+
+#Once the company director is happy with the preliminary results which basically 
+#provides the insights about their historical performance of their 2 years business.
+#The company is willing to adapt this new tool for a minimum of 1 years of 
+#seasonality patterns to see any improvements in their key performance indicators
+#which in-turn affects their ideas of investing such as, monthly or annual 
+#membership plans, promotional codes etc., The business manager closely monitors
+#the key performance indicators includes revenue, expenses for an year and reports 
+#directly to director every quarter.
+
+```
+## R CoNVO statement
+
+#CONTEXT:  
+	
+The London based tech-startup company has established an innovative 
+transportation business, whereby system subscribers have access to bicycles 
+through self-service kiosk locations around the community. This London Bike 
+sharing (LBS) company is providing the bike rentals for short distance 
+point-to-point trips providing subscribers access to bicycles at any self-service
+bike station to use and return to any bike station within the system’s service area. 
+Bike share stations are generally spaced in a dense grid pattern to create 
+convenient origins and destinations for riders. Most UK operators record the 
+average ride at 15 to 20 minutes and between one to four miles long. 
+The bicycle can be returned to any number of self-serve bike sharing stations,
+including the original check out location. The rental transaction is fully
+automated and there is no need for on-site staff. 
+
+Recently, the Sr.Director of this company has passed an order to revive the 
+revenue plans  of the company. The company Research and Development(R&D) head 
+is now started working with his team in trying to understand the impact of
+seasons, holidays, weather and peak times on their current existing business
+model. Based on these relationships, LBS company would like to adopt a new 
+technology which helps them in investing on different technologies and ideas 
+of promoting the rental business to increase the demand. 
+
+
+
+NEED: 
+
+Revenue is the most important key performance indicator of any company. 
+A profitable business can be achieved either through cost cutting or through 
+high marginal sales. Here the client is more interested in how to increase their
+rentals per hour ratio(ridership).
+
+\[
+\ { ridership } = {TotalRides}/{ hour }
+\]
+
+
+LBS has come up with a plan for increment in ridership throughout the year by 
+providing promotional codes to new riders, discounts during the holidays/weekends, 
+user friendly fares during the peak times etc., In-order to further invest on 
+promotion codes to new riders, the Sr.Director is more interested in knowing the
+impact of seasons, holidays, weather and peak times on their current existing 
+business model. Say for suppose, understanding the impact of seasons on the past 
+and current ridership trend would provide the data evidence on whether to invest
+in the promotion codes to new riders are not. Similarly, understanding the impact
+of weekdays/weekends on the past and current ridership trend serves as the data
+evidence on whether to invest on Discounts during weekends or not. etc.,
+
+In this way the inference of various factors on the rentals 
+would help management team to come up with a decision on what is the best season
+to introduce promotion codes and discounts.
+
+Here, LBS is not just looking at one single objective of prediction but it is 
+more interested into finding out the inference of the problem such as 
+understanding the effect seasonality patterns, weather, holiday and peak 
+times on demand for bike sharing. Based on the established inferences from the
+potential predictors, client is ready to take any appropriate measures to make 
+a profitable business in an year. 
+
+
+VISION: 
+
+The aim of the LBS is to develop an affordable, user-friendly bike share plan 
+that increases ridership with the profitable business. The LBS envisions a 
+system that is accessible and equitable to UK residents, students, workers 
+and visitors.
+
+The Bike Share Business Plan expands and revises adopted revenue policies. 
+This plan introduces the following new concepts: 
+1.	Basic tool for demand prediction and estimated revenues,
+2.	Understanding the impact of various factors (seasons, weather etc.,) 
+	  on the performance indicators(ridership),  
+3.	New bike share technologies, 
+4.	Demand prediction model further helps the management in whether to invest 
+    further in Promotional codes to new riders, discounts during weekends/holidays
+    and user friendly fares 	during peak hours
+
+
+
+OUTCOME:  
+
+Once the company director is happy with the preliminary results which basically 
+provides the insights about their historical performance of their 2 years business.
+The company is willing to adapt this new tool for a minimum of 1 year of 
+seasonality patterns to see any improvements in their key performance indicators
+which in-turn affects their ideas of investing such as, monthly or annual 
+membership plans, promotional codes etc., The business manager closely monitors
+the key performance indicators includes such as:
+
+1. % increment in riderships.
+2. % increment in Quarter revenue.
+3. Investment expenses for an year and reports directly to director every quarter.
+
+
+```{r }
+
+#Metadata:
+#"timestamp" - timestamp field for grouping the data
+#"cnt" - the count of a new bike shares
+#"t1" - real temperature in C
+#"t2" - temperature in C "feels like"
+#"hum" - humidity in percentage
+#"windspeed" - wind speed in km/h
+#"weathercode" - category of the weather
+#"isholiday" - boolean field - 1 holiday / 0 non holiday
+#"isweekend" - boolean field - 1 if the day is weekend
+#"season" - category field meteorological seasons: 0-spring ; 1-summer; 2-fall; 3-winter.
+#"weathe_code" category description:
+     #1  = Clear ; mostly clear but have some values with haze/fog/patches of fog/ fog in vicinity 
+     #2  = scattered clouds / few clouds 
+     #3  = Broken clouds 
+     #4  = Cloudy 
+     #7  = Rain/ light Rain shower/ #Light rain
+     #10 = rain with thunderstorm 
+     #26 = snowfall 
+     #94 = Freezing Fog
+
+```
+
+
+
+## R Renaming the predictors names
+```{r renaming the names of the fields for better readability}
+	message = FALSE
+	warning = FALSE
+# ---  change some names for clarity str(b)  ----#
+lBikeSharing = lBikeSharing %>% rename("Rentals" = "cnt",
+                  "Temperature" = "t1",
+                  "Feels_Like_Temperature" = "t2",
+                  "Humidity" = "hum",
+                  "Season" = 'season',
+                  'Weather' = 'weather_code',
+                  'Windspeed' = 'wind_speed',
+                  'Workday' = 'is_weekend',
+                  'Holiday' = 'is_holiday')
+
+```
+
+
+
+## R Data Pre-processing
+
+```{r Data cleaning or Preprocessing the data for more readibility and visualization}
+
+message = FALSE
+warning = FALSE
+duplicatelbBikeSharing = lBikeSharing[sample(nrow(lBikeSharing), 5000), ]
+
+
+dayField = data.frame(date=c(duplicatelbBikeSharing$timestamp)) 
+dayField$day <- weekdays(as.Date(dayField$date,"%m/%d/%Y" ))
+
+
+d <- data.frame(date = c(duplicatelbBikeSharing$timestamp))
+my_dates = separate(d, "date", c("Month", "Day", "Year"), sep = "/")
+
+
+my_hours = data.frame(do.call("rbind", strsplit(as.character(my_dates$Year), 
+                                                " ", fixed = TRUE)))
+
+
+duplicatelbBikeSharing = cbind(duplicatelbBikeSharing, my_hours, 
+                               my_dates$Month, my_dates$Day, dayField$day)
+
+temp_bikesharing = duplicatelbBikeSharing
+
+
+
+
+temp_bikesharing = temp_bikesharing %>% rename("Years" = "X1",
+                                                           "Times" = "X2",
+                                                           "Months" = "my_dates$Month",
+                                                           "DayNumberinMonths" = "my_dates$Day",
+                                                           "Days" = "dayField$day")
+
+
+
+
+
+Day_Number_in_Week = as.numeric(factor(temp_bikesharing$Days))
+Year = as.numeric(factor(temp_bikesharing$Years))
+Time = as.numeric(factor(temp_bikesharing$Times))
+Month  = as.numeric(factor(temp_bikesharing$Months))
+DayNumberinMonth = as.numeric(factor(temp_bikesharing$DayNumberinMonths))
+
+temp_bikesharing = cbind(temp_bikesharing, Day_Number_in_Week, Year, Time, Month,DayNumberinMonth)
+
+temp_bikesharing <- temp_bikesharing[ -c(1, 15) ]
+
+duplicatelbBikeSharing = duplicatelbBikeSharing %>% rename("Year" = "X1",
+                                                           "Time" = "X2",
+                                                           "Month" = "my_dates$Month",
+                                                           "DayNumber" = "my_dates$Day",
+                                                           "Day" = "dayField$day")
+
+
+
+
+
+duplicatelbBikeSharing$Month= factor(duplicatelbBikeSharing$Month, 
+                          levels = c(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12),
+                          labels = c('Jan', 'Feb', 'Mar', 'Apr', 'May',
+                                     'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov',
+                                     'Dec'))
+
+
+
+#duplicatelbBikeSharing <- copy(lBikeSharing)
+
+# re-coding the factors with the descriptive values for easy readability and 
+# understanding
+
+duplicatelbBikeSharing$Weather= factor(duplicatelbBikeSharing$Weather, 
+                          levels = c(1, 2, 3, 4, 7, 10, 26, 94),
+                          labels = c('clear', 'scattered_clouds', 
+                           'broken_clouds', 'cloudy', 'light_rain',
+                           'heavy_rain', 'snowfall', 
+                           'freezing_fog'))
+
+
+duplicatelbBikeSharing$Workday= factor(duplicatelbBikeSharing$Workday, 
+                          levels = c(0, 1),
+                          labels = c('workday', 'weekend'))
+
+duplicatelbBikeSharing$Holiday= factor(duplicatelbBikeSharing$Holiday, 
+                          levels = c(0, 1),
+                          labels = c('non_holiday', 'holiday'))
+
+
+
+
+duplicatelbBikeSharing$Season= factor(duplicatelbBikeSharing$Season, 
+                          levels = c(0, 1, 2, 3),
+                          labels = c('spring', 'summer', 'fall', 'winter'))
+
+
+
+
+
+
+
+
+```
+
+
+```{r Names of the predictors and the response variable}
+message = FALSE
+warning = FALSE
+
+#From the given data, we can identify that the following are the predictors:
+
+
+#DEFINATIONS AND DESCRIPTION:
+#PREDICTORS:
+  #1. Timestamp   : This is in the format of mm/dd/yyyy hh which tells us the 
+  #                information about the bike rents that were happened
+
+  #2. Weather     :  The weather field in the data describes about the how the day
+  #                 is basically is it a sunny day or cloudy or rainy day etc.,
+
+
+  #3. Temperature : The temperature field in the data is measured in the degrees
+  #                 of  celsius scale. It is the average temperature measured 
+  #                 during the day
+  #                
+  #4. Feels like temperature: The Feels like temperature field in the data is 
+  #                  measured in the degrees of  celsius scale. It is the average
+  #                  feels like temperature during the day.
+  #                 
+  #                 
+  #5. Wind speed  : This is the speed with which air is moving from high to low
+  #                  pressure, usually due to changes in temperature
+  #                 
+  #6. Humidity    :  This is the field in data which indicates the concentration
+  #                  of water vapor present in the air.
+
+  #7. Workday     : This is just binary variable tells us the information
+  #                 about the day whether it is a workday or not
+
+
+  #8. Season      : The season variable in the data tells us the information about
+  #                  whether the season being spring, summer, fall or winter.
+
+#RESPONSE VARIABLE
+  #1. Rentals    : The response variable is the total number of rents that were
+  #                 occurred during any given hour of a given day
+
+
+
+```
+
+
+From the given data, we can identify that the following are the predictors:
+
+
+## R DEFINATIONS AND DESCRIPTION:
+
+
+PREDICTORS:
+
+
+  1. Timestamp   : This is in the format of mm/dd/yyyy hh which tells us the 
+                  information about the bike rents that were happened
+
+  2. Weather     :  The weather field in the data describes about the how the day
+                   is basically is it a sunny day or cloudy or rainy day etc.,
+
+
+  3. Temperature : The temperature field in the data is measured in the degrees
+                   of  celsius scale. It is the average temperature measured 
+                   during the day
+                  
+  4. Feels like temperature: The Feels like temperature field in the data is 
+                    measured in the degrees of  celsius scale. It is the average
+                    feels like temperature during the day.
+                   
+                   
+  5. Wind speed  : This is the speed with which air is moving from high to low
+                    pressure, usually due to changes in temperature
+                   
+  6. Humidity    :  This is the field in data which indicates the concentration
+                    of water vapor present in the air.
+
+  7. Workday     : This is just binary variable tells us the information
+                   about the day whether it is a workday or not
+
+
+  8. Season      : The season variable in the data tells us the information about
+                    whether the season being spring, summer, fall or winter.
+
+RESPONSE VARIABLE
+  1. Rentals    : The response variable is the total number of rents that were
+                   occurred during any given hour of a given day
+                   
+                   
+                   
+
+ ## R Total number of rentals based on the Years
+
+
+
+
+
+```{r }
+
+
+#-------------------------------------------#
+######       Visualize the Data        ######
+#-------------------------------------------#
+
+# set the color palette
+pal = c("olivedrab3", 'blue', 'red', 'grey50')
+
+#####   Rentals by Season & Temperature    #####
+options(repr.plot.width=12, repr.plot.height=7)
+ggplot(duplicatelbBikeSharing, aes(Temperature, Rentals, color = Season)) + geom_point() +
+  theme_bw(base_size = 18) + scale_color_manual(values = pal) +
+  labs(title = "Rentals by Season & Temperature", x = "Temperature Celsius", y = "Total Rentals") +
+  scale_y_continuous(labels = scales::label_comma())
+
+
+
+
+
+```
+
+#Observation:
+
+Clearly from the above 3 dimensional plot we can see that the rentals are happening 
+summers are higher compared to rest of the seasons.This plot also concludes that
+number of rentals happened during 15-25 degree celsius are more in number than the
+rest of the temperature.
+
+
+
+```{r }
+#--------------------------------------------------#
+######    Remove Year = 2017 from the data     #####
+#--------------------------------------------------#
+
+# There is limited data for 2017 so I will remove that year from the dataset
+duplicatelbBikeSharing <- duplicatelbBikeSharing %>% filter(Year != "2017")
+# the data should look more uniform now and help us build a more accurate model
+
+
+
+```
+
+```{r }
+#####   Rentals by Season & Temperature & Year   #####
+ggplot(duplicatelbBikeSharing, aes(Temperature, Rentals, color = Season)) + geom_point() +
+  theme_bw(base_size = 18) + scale_color_manual(values = pal) +
+  labs(title = "Rentals by Season, Temperature & Year", x = "Temperature Celsius", y = "Total Rentals") +
+  scale_y_continuous(labels = scales::label_comma()) +
+  facet_grid(~Year) + theme(strip.background = element_rect(fill="grey90"))
+
+
+
+
+```
+
+
+#Observation:
+
+As I mentioned in the above plot, the number of rentals are happening in 
+the summer are more in number in the both the historical years i.e. 2015 and 2016.
+
+
+
+```{r }
+#####   Rentals by Workday   #####
+ggplot(duplicatelbBikeSharing, aes(Temperature, Rentals, color = Season)) + geom_point() +
+  theme_bw(base_size = 18) + scale_color_manual(values = pal) +
+  labs(title = "Rentals by Workday", x = "Temperature Celsius", y = "Total Rentals") +
+  scale_y_continuous(labels = scales::label_comma()) +
+  facet_grid(~Workday) + theme(strip.background = element_rect(fill="grey90"))
+```
+#Observation:
+
+Clearly, from the above plot we can see that the number of rentals happening 
+during the workdays are more in number when compared to the weekends.
+
+
+```{r }
+# --- Rentals & Temperature by Season & Workday
+ggplot(duplicatelbBikeSharing, aes(Temperature, Rentals, color = Season)) +
+  geom_jitter(width = 0.25, show.legend = F) + scale_color_manual(values = pal) +
+  labs(y="Count of Rentals", title = "Rentals by Season & Workday") +
+  facet_grid(Workday ~ Season) + theme_bw(base_size = 18) +
+  theme(strip.background = element_rect(fill="grey90"))
+```
+#Observation:
+
+As I mentioned in my above plot from the above plot that the number of rentals happening 
+during the workdays are more in number when compared to the weekends.And this 
+trend is repeated across all the seasons.
+
+
+
+```{r }
+
+# ----   Rentals & Temperature by Weather 
+w = c('skyblue3','skyblue4','grey40',"olivedrab3", 'blue', 'red', 'grey50')
+ggplot(duplicatelbBikeSharing, aes(Temperature, Rentals, color = Weather)) + 
+  geom_jitter(width = 0.10, show.legend = F) + 
+  scale_color_manual(values = w) +
+  labs(y="Count of Rentals", title = "Rentals & Temperature by Weather") + 
+  facet_grid(Workday ~ Weather) + theme_bw(base_size = 18) +
+  theme(strip.background = element_rect(fill="grey90"))
+
+
+
+```
+
+#Observation:
+
+As I mentioned in my above plot from the above plot that the number of rentals happening 
+during the workdays are more in number when compared to the weekends.And this 
+trend is repeated across all the different types of weather.
+
+
+
+
+##R Rentals during Workday in Various Seasons
+```{r Rentals during a WorkDay}
+
+message = FALSE
+warning = FALSE
+
+ggplot(data=duplicatelbBikeSharing,                # Define the data to plot
+       aes(x=Workday, 
+           y=Rentals, 
+           fill=Time)) +                        # Different fill colours
+  geom_boxplot(outlier.shape = NA) +                             # Draw a box and whiskers plot
+  labs(y='Rentals') +                 # Add y-axis title
+  theme_bw()+                                   # Set the background to white
+  scale_y_continuous(labels = scales::label_comma())+ 
+  theme(axis.text.x = element_text(angle = 90, vjust = 1, hjust = 1))
+```
+#Observation:
+a. The number of bike sharing happening from 3PM to 7 PM are very high 
+compared to any other hour in any given day.
+
+
+
+##R Rentals during Workday in Various Seasons
+```{r Rentals during Workday in Various Seasons}
+
+message = FALSE
+warning = FALSE
+
+ggplot(data=duplicatelbBikeSharing,                # Define the data to plot
+       aes(x=Season, 
+           y=Rentals, 
+           fill=Weather)) +                        # Different fill colours
+  geom_boxplot(outlier.shape = NA) +                             # Draw a box and whiskers plot
+  labs(y='Rentals') +                 # Add y-axis title
+  theme_bw()+                                   # Set the background to white
+  scale_y_continuous(labels = scales::label_comma())+ 
+  theme(axis.text.x = element_text(angle = 90, vjust = 1, hjust = 1))
+```
+
+
+###############################################################
+#-------------------------------------------------------------#
+###    Data Distributions - Is data normally distributed?  ####
+#-------------------------------------------------------------#
+###############################################################
+
+```{r }
+par(mfrow=c(2,2))
+options(repr.plot.width=12, repr.plot.height=7)
+hist_boxplot(duplicatelbBikeSharing$Rentals, main = "Rentals", col = "green", xlab = "Rentals");
+hist_boxplot(duplicatelbBikeSharing$Temperature, main = "Temperature", col = "orange", xlab = "Temperature");
+hist_boxplot(duplicatelbBikeSharing$Humidity, main = "Humidity", col = "lightblue",xlab = "Humidity");
+hist_boxplot(duplicatelbBikeSharing$Windspeed, main = "Windspeed", col = "yellow", xlab = "Windspeed");
+par(mfrow=c(1,1))
+
+
+
+
+```
+
+```{r }
+message = FALSE
+warning = FALSE
+ggplot(duplicatelbBikeSharing, aes(x=Rentals))+
+  geom_density(color="green", fill="lightgreen")
+ggplot(duplicatelbBikeSharing, aes(x=Temperature))+
+  geom_density(color="orange", fill="orange")
+ggplot(duplicatelbBikeSharing, aes(x=Humidity))+
+  geom_density(color="lightblue", fill="lightblue")
+ggplot(duplicatelbBikeSharing, aes(x=Windspeed))+
+  geom_density(color="yellow", fill="yellow")
+
+```
+
+
+```{r }
+#####    Skew of the Distirbutions     ######
+
+# does skewness deviate a lot from 1 ?
+skewness(duplicatelbBikeSharing$Rentals); 
+skewness(duplicatelbBikeSharing$Temperature); 
+skewness(duplicatelbBikeSharing$Humidity);
+skewness(duplicatelbBikeSharing$Windspeed);
+
+```
+
+#Observation:
+
+Clearly from the histogram frequency plot and from the density plots we can see 
+the outcome variable "RENTALS" is positively skewed with the value 1.37.
+
+To remove the positive skewness, I have applied the log-transformation to the outcome 
+variable.And further to it, I have applied the batch transformation to the predictors.
+
+
+
+
+```{r Trying to remove the positive skewness in the outcome variable}
+
+###############################################################################
+
+################## Train set Preprocessing ###################################
+#Subtracting the outcome variable from the largest positive number 100
+#to bring the negatively skewed outcome variable to positive side
+master_train_set_Y = duplicatelbBikeSharing$Rentals
+#Measurement of postive skewness of the train data set
+skewness(master_train_set_Y)
+#log transformation of the outcome variable to bring the outcome variable into
+#normal distribution
+log_transformed_outcome <-log(master_train_set_Y)
+
+#Measuring the final  skewness of the outcome variable of the train set
+skewness(log_transformed_outcome)
+
+trans_lbBikeSharing = cbind(duplicatelbBikeSharing, log_transformed_outcome)
+
+ggplot(trans_lbBikeSharing,aes(log_transformed_outcome))+ geom_histogram(bins=50)
+
+
+#Predictors Transformation
+predictors_only_master_train_set <- select(trans_lbBikeSharing, -Rentals, -log_transformed_outcome)
+# Change master_train_set from tible to data.frame as
+# preProcess only accepts dataframes
+df_predictors_only <- data.frame(predictors_only_master_train_set)
+master_train_set_preprocessing_fit <- preProcess(
+df_predictors_only,
+method = c("BoxCox", "center", "scale"))
+
+transformed_predictors <- predict(
+master_train_set_preprocessing_fit, df_predictors_only)
+
+
+
+preprocessed_master_train_data <- add_column(transformed_predictors,
+Rentals = log_transformed_outcome)
+
+
+
+ggplot(preprocessed_master_train_data, aes(x=Rentals))+
+  geom_density(color="green", fill="lightgreen")
+
+```
+
+#Observation:
+After applying the log-transformation, we could see that the outcome variable 
+"Rental" is now with the skewness -0.62
+
+```{r }
+#------------------------------------------------------#
+#####   Identify & Remove outliers - Rentals   #####
+#------------------------------------------------------#
+
+# 50% of the data falls between the quantiles
+Q <- quantile(duplicatelbBikeSharing$Rentals, probs=c(.25, .75), na.rm = T)
+Q1 = quantile(temp_bikesharing$Rentals, probs=c(.25, .75), na.rm = T)
+# this is the data inside of the boxplot
+iqr <- IQR(duplicatelbBikeSharing$Rentals, na.rm = T)
+iqr1 =  IQR(temp_bikesharing$Rentals, na.rm = T)
+# remove the outlier beyond 1.5 * iqr for Rentals
+duplicatelbBikeSharing2 <- duplicatelbBikeSharing %>% filter(Rentals < (Q[2] + 1.5*iqr))  
+                     # only removing right skewed data points
+                     # Rentals > (Q[1] - 1.5*iqr))
+temp_bikesharing2 = temp_bikesharing %>% filter(Rentals < (Q[2] + 1.5*iqr))
+
+# visualize the new dataset without outliers
+options(repr.plot.width=12, repr.plot.height=6)
+par(mfrow=c(2,1))
+boxplot(duplicatelbBikeSharing$Rentals, col = "grey40", horizontal = T, 
+        main = "Rentals - Before Removing Outliers")
+boxplot(duplicatelbBikeSharing2$Rentals, col = "palegreen3", horizontal = T, 
+        main = "Rentals - After Removing Outliers")
+# how many rows removed?
+nrow(duplicatelbBikeSharing) - nrow(duplicatelbBikeSharing2)
+
+```
+
+
+
+```{r }
+message = FALSE
+warning = FALSE
+set.seed(123)
+
+sample = temp_bikesharing2 %>% select(Rentals, Time, Workday, DayNumberinMonth, 
+                      Temperature, Humidity, Weather, Season, Windspeed)
+
+
+total_nan = function(x) sum(is.na(x))
+sample %>% summarise(across(everything(), total_nan))
+
+
+training.samples <-sample$Rentals %>%
+  createDataPartition(p = 0.8, list = FALSE)
+train.data  <- sample[training.samples, ]
+test.data <- sample[-training.samples, ]
+
+```
+
+
+#Null Hypothesis Rejection
+```{r Testing the Null hypothesis}
+
+Rentals.lm = lm(Rentals ~Temperature, data=train.data)
+summary(Rentals.lm) 
+
+
+```
+
+Observation:
+As the p-value is much less than 0.05, we reject the null hypothesis that β = 0.
+Hence there is a significant relationship between the variables in the linear 
+regression model of the data set faithful.
+
+
+```{r }
+
+correlation_matrix <-
+cor(temp_bikesharing %>% select(where(is.numeric)))
+library(corrplot)
+corrplot(correlation_matrix, order = "hclust")
+
+
+
+#Remove predictors with correlations that are too high
+
+
+set.seed(100)
+#preMethods <- c("nzv", "corr", "YeoJohnson", "center", "scale", "knnImpute")
+ctrl <- trainControl(method = "boot", number = 25)
+(tune <- train(Rentals ~., data = train.data,
+  method="pls", tuneLength=10, trControl=ctrl))
+
+plsImp <- varImp(tune, scale = FALSE)
+ggplot(plsImp, top = 8)
+
+
+```
+#Observation: From the above feature importance chart, we can see that the 
+predictor "Humidity" is highly important followed by Temperature, Windspeed, and 
+Time.
+
+
+
+
+```{r Linear Regression}
+message = FALSE
+warning = FALSE
+set.seed(123) 
+train.control <- trainControl(method = "cv", number = 10)
+# Train the model
+model <- train(Rentals ~., data = train.data, method = "lm",
+               trControl = train.control)
+# Summarize the results
+print(model)
+
+predictions <- model %>% predict(test.data)
+data.frame( 
+            RMSE = RMSE(predictions, test.data$Rentals),
+            MAE = MAE(predictions, test.data$Rentals))
+
+
+```
+#Observation:
+
+***Linear regression with the cross validation 10 has performed very poor with the
+RMSE value as 757 and with the Rsquared value at 0.29
+
+```{r LASSO regression-2 }
+message = FALSE
+warning = FALSE
+
+x <- model.matrix(Rentals~., train.data)[,-1]
+# Outcome variable
+y <- train.data$Rentals
+
+
+set.seed(100)
+lassoGrid <- expand.grid(lambda = c(0),
+                        fraction = seq(.1, 1, length = 15))
+lassoTune <- train(x, y,
+                  method = "enet",
+                  tuneGrid = lassoGrid,
+                  trControl = trainControl("cv", number = 10),
+                  preProc = c("center", "scale")
+                  )
+
+predictions <- lassoTune %>% predict(test.data)
+#head(predictions)
+# Compute the prediction error RMSE
+RMSE(predictions, test.data$Rentals)
+MAE(predictions, test.data$Rentals)
+print(lassoTune)
+plot(lassoTune)
+lassoTune
+
+
+
+
+
+
+```
+
+#Observation:
+
+***LASSO Linear model with the cross validation 10 has performed very poor as well, with the
+RMSE value as 757 and with the Rsquared value at 0.29(almost similar to the linear model)
+
+
+```{r Regression Tree}
+# Fit the model on the training set
+message = FALSE
+warning = FALSE
+set.seed(123)
+model <- train(
+  Rentals ~., data = train.data, method = "rpart",
+  trControl = trainControl("cv", number = 10),
+  tuneLength = 10
+  )
+# Plot model error vs different values of
+# cp (complexity parameter)
+plot(model)
+# Print the best tuning parameter cp that
+# minimize the model RMSE
+#model$bestTune
+
+model
+
+
+
+```
+
+```{r }
+message = FALSE
+warning = FALSE
+par(xpd = NA) # Avoid clipping the text in some device
+plot(model$finalModel)
+text(model$finalModel, digits = 3)
+
+message = FALSE
+warning = FALSE
+predictions <- model %>% predict(test.data)
+#head(predictions)
+# Compute the prediction error RMSE
+RMSE(predictions, test.data$Rentals)
+MAE(predictions, test.data$Rentals)
+
+```
+
+#Observation:
+
+***Regression Tree model with the cross validation 10 has performed much better, with the
+RMSE value as 487 and with the Rsquared value at 0.72.
+
+
+```{r svm }
+
+message = FALSE
+warning = FALSE
+svmRTuned <-train(Rentals ~., data = train.data,
+                       method = "svmRadial",
+                       preProc =c("center", "scale"),
+                       tuneLength = 8,
+                       epsilon = 0.01,
+                       trControl = trainControl("cv", number = 10))
+
+predictions <-  svmRTuned %>% predict(test.data)
+
+RMSE(predictions, test.data$Rentals)
+
+ggplot(svmRTuned)
+
+svmRTuned
+
+```
+
+#Observation:
+
+***SVM-Radial Non-linear model with the cross validation 10 has not performed better
+when compared with Regression Trees, but performed much better when compared with
+Linear models  with the RMSE value as 516 and with the Rsquared value at 0.66.
+
+
+
+
+
+
+
+
+
+################## MODEL PERFORMANCE COMPARSION ##########################
+
+RANK | TYPE    |  TEST RSME | TRAIN RSME | MODEL NAME    | COMPLEX PARAMETER  
+
+1.   |  Trees  |    487     |  508       | RegressionTree| cp = 0.0015
+2.   | Non-line|    516     |  522       | SVM Radial    | c=32; complex
+3.   | Linear  |    656     |  630       |  LASSO        | simple;fraction=0.74
+4.   | Linear  |    749     |  746       | Linear regress| simple
+
+
+
+Note: The R(squared) values for the Linear models are 29% where as the basic 
+regression tree has given 72%.
+
+To summarize on the R(Sqaured) values:
+
+1. Regression Tree = 0.72R(Sqaured)
+1. SVM-Radial = 0.66R(Sqaured)
+2. Linear Models = 0.29R(Sqaured)
+
+
+
+***Based on the above summary we can see that Regression tree model performed 
+better compared to the rest if the models.Hence I decided to investigate further 
+on the tree based model through appropriate tuning methods along with other 
+feature engineering techniques.
+
+
+Although demand prediction is the main exercise for this project but predicting
+rentals on hourly basis for any given day based on the given weather, season and
+weekday/weekend etc., this makes the problem somewhat DIFFICULT.
+
+On other hand, as I discussed in the causality diagram, the number of rentals 
+that are happening during the light-rain out-numbered the rentals happening 
+during the cloudy day during the summer and fall.  
+Addressing this question makes the problem INTERESTING. 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
